@@ -14,36 +14,45 @@
     <packaging>jar</packaging>
 
     <dependencies>
+        <!-- 1. Spring Boot 基础 Web 依赖，提供内置 Tomcat 容器和 Spring MVC 支持，没有它写不了 @RestController -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
+        <!-- 2. Spring Boot 官方测试包，作用于测试环境 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
 
+        <!-- ======================= Spring AI 相关库 ======================= -->
+        <!-- 3. OpenAI 官方支持包，用于连接 OpenAI 接口或配置它的 Embedding 模型 -->
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
         </dependency>
 
+        <!-- 4. Spring AI - Tika 文档解析器。强大的文本提取库，给 RAG 用来解析你长篇大论的文件或源码 -->
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-tika-document-reader</artifactId>
         </dependency>
 
+        <!-- 5. Spring AI - PgVector 插件存储端，帮你的程序连向 PostgreSQL 的向量存储表 -->
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-pgvector-store-spring-boot-starter</artifactId>
         </dependency>
 
+        <!-- 6. Spring AI - Ollama 客户端。专找本地开源大模型（Llama3等）干活的 -->
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-ollama</artifactId>
         </dependency>
+        <!-- ==================================================================== -->
 
+        <!-- 7. 用于在写 application.yml 自定义配置节点时，生成代码提示元数据 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-configuration-processor</artifactId>
@@ -62,12 +71,14 @@
             <artifactId>lombok</artifactId>
         </dependency>
 
+        <!-- 8. Redisson 客户端：不仅能做 Redis 简单缓存，主要用于分布式锁各种高端操作 -->
         <dependency>
             <groupId>org.redisson</groupId>
             <artifactId>redisson-spring-boot-starter</artifactId>
             <version>3.44.0</version>
         </dependency>
 
+        <!-- 9. JGit 依赖：它能让 Java 代码像 Git 命令一样去 clone 项目源码。在 RAG 入库功能中，用它拉取远程代码来训练回答库 -->
         <dependency>
             <groupId>org.eclipse.jgit</groupId>
             <artifactId>org.eclipse.jgit</artifactId>
@@ -79,6 +90,15 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- ======================= 重点：核心业务模块依赖 (包含所有 api 模块等) ======================= -->
+        <!-- 
+           10. [为什么 app 里只有 trigger，但 api 的代码都在里面跑？]
+           这就是 Maven 的“依赖传递性 (Transitive Dependency)”！
+           你在 app 目录写的下面这玩意儿：依赖了 trigger 模块。
+           但在刚才我已经帮你查了这层底下的 trigger 项目的 pom，那里面赫然写着 `<artifactId>xfg-dev-tech-api</artifactId>` !
+           这就好比：app 依赖了 trigger，trigger 又依赖了 api。
+           因此当你把 app 编译打 jar 包时，Maven 顺藤摸瓜，把你 api 和 trigger 包下的所有代码都拽过来，压成了一张“大饼（最终的业务包 jar）”。
+        -->
         <dependency>
             <groupId>cn.bugstack</groupId>
             <artifactId>xfg-dev-tech-trigger</artifactId>

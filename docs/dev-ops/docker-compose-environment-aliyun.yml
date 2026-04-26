@@ -96,6 +96,21 @@ services:
     networks:
       - my-network
 
+ # 新增Portainer服务（已修正）
+  portainer:
+    image: hub-mirror.c.163.com/portainer/portainer-ce:2.20.3
+    container_name: portainer
+    restart: always
+    ports:
+      - "9000:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    networks:
+      - my-network
+
 networks:
   my-network:
     driver: bridge
+volumes:
+  portainer_data:

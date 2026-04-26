@@ -13,8 +13,8 @@ import java.io.Serializable;
 @AllArgsConstructor
 public class Response<T> implements Serializable {
 
-    private String code;
-    private String info;
-    private T data;
+    private String code;//状态码
+    private String info;//提示信息
+    private T data;//数据
 
 }

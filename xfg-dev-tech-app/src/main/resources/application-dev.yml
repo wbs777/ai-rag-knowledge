@@ -1,62 +1,97 @@
 server:
+  # Spring Boot 内置 Tomcat 启动的端口号
   port: 8090
 
 spring:
+  # 数据库连接配置 (本项目主要用于连接 PostgreSQL + PGVector 扩展)
   datasource:
+    # 数据库驱动，这里使用的是 PostgreSQL 的 JDBC 驱动
     driver-class-name: org.postgresql.Driver
+    # 数据库用户名
     username: postgres
+    # 数据库密码
     password: postgres
-    url: jdbc:postgresql://192.168.1.109:15432/ai-rag-knowledge
+    # 数据库连接地址，IP为虚拟机/服务器地址，15432为映射的外部端口，ai-rag-knowledge是库名
+    url: jdbc:postgresql://110.40.154.201:15432/ai-rag-knowledge
+    # 指定使用的连接池实现，这里用的是 Spring Boot 默认且推荐的 HikariCP
     type: com.zaxxer.hikari.HikariDataSource
-    # hikari连接池配置
+    # HikariCP 数据库连接池详细配置
     hikari:
-      #连接池名
+      # 连接池名称，常用于日志监控和区分不同数据源
       pool-name: HikariCP
-      #最小空闲连接数
+      # 连接池中的最小空闲连接数，系统在低谷时也会保持的连接数量
       minimum-idle: 5
-      # 空闲连接存活最大时间，默认10分钟
+      # 空闲连接存活最大时间(毫秒)，超时会被释放，默认10分钟(600000ms)
       idle-timeout: 600000
-      # 连接池最大连接数，默认是10
+      # 连接池最大连接数，防止过度占用数据库资源，默认是10
       maximum-pool-size: 10
-      # 此属性控制从池返回的连接的默认自动提交行为,默认值：true
+      # 从池中获取的连接的默认自动提交行为，默认值：true
       auto-commit: true
-      # 此属性控制池中连接的最长生命周期，值0表示无限生命周期，默认30分钟
+      # 连接池中连接的最长生命周期(毫秒)，0表示无限，默认30分钟(1800000ms)
       max-lifetime: 1800000
-      # 数据库连接超时时间,默认30秒
+      # 尝试获取数据库连接的超时时间(毫秒),超过这个时间抛出异常，默认30秒(30000ms)
       connection-timeout: 30000
-      # 连接测试query
+      # 连接测试SQL，用于验证从连接池取出的连接是否仍然有效
       connection-test-query: SELECT 1
+      
+  # 相关的 AI 框架/大模型服务配置（本项目用于实现 RAG 检索增强生成）
   ai:
+    # 本地化/私有化部署的 Ollama 服务配置
     ollama:
-      base-url: http://192.168.1.109:11434
+      # Ollama 服务的 API 地址和端口
+      base-url: http://110.40.154.201:11434
+      # 针对 Ollama 词向量(Embedding)模型的特定配置
       embedding:
         options:
+          # 批处理的大小，适当提高可以增加向量化的吞吐量
           num-batch: 512
+        # 使用的具体向量化模型名称，用于文本检索降维
         model: nomic-embed-text
+        
+    # OpenAI 兼容的 API 服务配置（可是官方或第三方代理）
     openai:
+      # OpenAI API 的网关/代理地址
       base-url: https://pro-share-aws-api.zcyai.com/
+      # 调用 API 的认证密钥
       api-key: sk-eEyfxptPgbfXd3Z164260740E0494161Bd8**找小傅哥申请
+      # 使用的具体向量化模型，ada-002 是 OpenAI 经典的 embedding 模型
       embedding-model: text-embedding-ada-002
+      
+    # 用户自定义的 RAG 业务级配置，用于控制 RAG 流程
     rag:
-      embed: nomic-embed-text #nomic-embed-text、text-embedding-ada-002
+      # 当前 RAG 流程实际选用的向量模型标识 (nomic-embed-text、text-embedding-ada-002 选其一)
+      embed: nomic-embed-text 
 
-
-# Redis
+# Redis 缓存组件的连接配置
 redis:
   sdk:
     config:
-      host: 192.168.1.109
+      # Redis 服务的 IP 地址
+      host: 110.40.154.201
+      # Redis 服务的映射端口
       port: 16379
+      # Redis 连接池大小
       pool-size: 10
+      # Redis 最小空闲连接数
       min-idle-size: 5
+      # 空闲连接超时时间(毫秒)
       idle-timeout: 30000
+      # 建立 Redis 连接的超时时间(毫秒)
       connect-timeout: 5000
+      # 连接断开时的重试次数
       retry-attempts: 3
+      # 每次重试的间隔时间(毫秒)
       retry-interval: 1000
+      # 心跳检测周期(毫秒)，验证连接有效性
       ping-interval: 60000
+      # 是否开启 TCP keepalive 检测，用于保持长连接
       keep-alive: true
 
+# 日志框架配置
 logging:
+  # 日志级别控制
   level:
+    # root 代表整个 Spring Boot 项目的全局最低输出日志级别是 info
     root: info
+  # 引用的外部日志配置文件路径 (即 resources 下的 logback-spring.xml 文件)
   config: classpath:logback-spring.xml

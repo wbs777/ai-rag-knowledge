@@ -1,51 +1,69 @@
 version: '3.8'
 # docker-compose -f docker-compose-app-v1.0.yml up -d
 services:
-  # 部署前端项目
+  # 部署前端项目 Nginx (反向代理服务器和静态资源宿主)
   nginx:
+    # 采用特制或标准的Nginx镜像
     image: registry.cn-hangzhou.aliyuncs.com/xfg-studio/nginx:latest
     container_name: nginx
     restart: always
+    # 将宿主机(外部)的80端口映射到容器内的80端口
     ports:
       - '80:80'
     volumes:
+      # ⚠️ 注意这里：直接挂载了当前路径下(同级)的 nginx/html 目录，这就解释了前面同级目录中 nginx 文件夹的作用
       - ./nginx/html:/usr/share/nginx/html
+      # 挂载自定义的 Nginx 配置，用来指定反向代理规则，把前端请求转发给下面的 ai-rag-knowledge-app
       - ./nginx/conf/nginx.conf:/etc/nginx/nginx.conf
       - ./nginx/conf/conf.d:/etc/nginx/conf.d
+    # 授予容器内部更高权限
     privileged: true
-  # ai-rag-knowledge
+    networks:
+      - my-network
+
+  # ai-rag-knowledge 业务后端核心应用
   ai-rag-knowledge-app:
+    # 后端程序的 Docker 镜像，通常是本地的 Dockerfile 构建出来后推上去的
     image: fuzhengwei/ai-rag-knowledge-app:1.2
     container_name: ai-rag-knowledge-app
+    # 如果启动失败(如数据库连接失败)，会自动重启
     restart: on-failure
+    # 将宿主机外部的8090端口映射到容器内Spring Boot的8090端口
     ports:
       - "8090:8090"
+    # 重写/注入相关的环境变量（这会覆盖 application.yml 里的各种配置！）
     environment:
       - TZ=PRC
       - SERVER_PORT=8090
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=postgres
+      # 指向了内部网络中的数据库容器（注意这里写的是 vector_db:5432，和你在 application-dev.yml 里的 192.168.x.x 完全不一样，代表是在docker网络内互联）
       - SPRING_DATASOURCE_URL=jdbc:postgresql://vector_db:5432/ai-rag-knowledge
       - SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.postgresql.Driver
-      - SPRING_AI_OLLAMA_BASE_URL=http://117.72.115.188:11434
+      - SPRING_AI_OLLAMA_BASE_URL=http://110.40.154.201:11434
       - SPRING_AI_OLLAMA_EMBEDDING_OPTIONS_NUM_BATCH=512
       - SPRING_AI_OLLAMA_MODEL=nomic-embed-text
       - SPRING_AI_OPENAI_BASE_URL=https://pro-share-aws-api.zcyai.com/
       - SPRING_AI_OPENAI_API_KEY=sk-eEyfxptPgbfXd3Z164260740E0494161Bd8957E918Ed7c4d
       - SPRING_AI_OPENAI_EMBEDDING_MODEL=text-embedding-ada-002
       - SPRING_AI_RAG_EMBED=nomic-embed-text
+      # Redis同样通过 docker 内部网络中的 redis 服务互联
       - REDIS_SDK_CONFIG_HOST=redis
       - REDIS_SDK_CONFIG_PORT=6379
     volumes:
+      # 映射内部日志到宿主机的当前 log 文件夹下
       - ./log:/data/log
+    # Docker 容器自身的日志轮转策略（保存3个文件，每个最多10M）
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
+    # 加入同样的网段，使 Nginx、后端应用以及未来的 Redis/DB 能直接通过 name 相互通信
     networks:
       - my-network
 
+# 自定义网段声明
 networks:
   my-network:
     driver: bridge
