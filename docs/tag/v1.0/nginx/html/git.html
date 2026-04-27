@@ -115,7 +115,8 @@
         loadingOverlay.style.display = 'flex';
         document.getElementById('status').textContent = '';
 
-        fetch('http://117.72.115.188:8090/api/v1/rag/analyze_git_repository', {
+        // 使用反向代理的相对路径
+        fetch('/api/v1/rag/analyze_git_repository', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
